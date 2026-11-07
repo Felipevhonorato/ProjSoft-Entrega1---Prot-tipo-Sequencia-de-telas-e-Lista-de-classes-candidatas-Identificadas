@@ -1,0 +1,61 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam ArrowColor #334155
+skinparam sequenceMessageAlign left
+skinparam sequenceParticipant underline
+skinparam maxMessageSize 260
+skinparam ParticipantPadding 18
+skinparam BoxPadding 12
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #F8FAFC
+skinparam classBorderColor #475569
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceParticipantBackgroundColor #EFF6FF
+skinparam sequenceGroupBackgroundColor #F8FAFC
+hide footbox
+
+title sd UC01.1 - Identificação por SMS (passos 1 a 5)
+caption Minha Refeição | UC01 - Assinar Plano de Refeições
+box "Atores" #FFFFFF
+actor "Assinante" as u
+end box
+box "Fronteira" #E8F2FF
+participant "tela : TelaAssinatura" as t <<Fronteira>>
+participant "sms : GatewaySMS" as sms <<Fronteira>>
+end box
+box "Controller e serviços" #FEF3C7
+participant "ctrl : ControladorAssinatura" as c <<Controller>>
+end box
+box "Entidades e coleções" #EDF7F0
+participant "assinantes : RepositorioAssinantes" as ra <<Collection>>
+participant "assinante : Assinante" as a <<Entidade>>
+participant "planos : CatalogoPlanos" as cp <<Collection>>
+end box
+u -> t : 01.01 informarCelular(celular)
+t -> c : 01.02 solicitarCodigo(celular)
+activate c
+create participant "codigo : CodigoConfirmacao" as cod <<Entidade>>
+c --> cod : 01.03 «create» CodigoConfirmacao(celular)
+c -> sms : 01.04 enviar(celular, codigo.valor)
+c -> t : 01.05 exibirCodigoEnviado()
+deactivate c
+u -> t : 01.06 informarCodigo(codigoInformado)
+t -> c : 01.07 validarCodigo(codigoInformado)
+activate c
+c -> cod : 01.08 resultado := validar(codigoInformado)
+cod --> c : VALIDO
+alt resultado = VALIDO
+c -> ra : 01.09 assinante := obterOuCadastrar(celular)
+c -> a : 01.10 confirmarCelular()
+c -> ra : 01.11 salvar(assinante)
+c -> cp : 01.12 planos := listarDisponiveis()
+c -> t : 01.13 exibirPlanos(planos)
+else resultado != VALIDO
+ref over u,c,cod : Fluxo alternativo 1 - código inválido (diagrama 06)
+end
+deactivate c
+@enduml
