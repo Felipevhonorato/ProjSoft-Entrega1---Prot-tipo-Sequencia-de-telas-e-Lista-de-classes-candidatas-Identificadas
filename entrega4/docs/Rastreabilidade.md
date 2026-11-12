@@ -1,5 +1,11 @@
 # Correspondência entre UML e Java
 
+## Localização dos objetos no projeto
+
+Cada tipo possui um arquivo próprio em `src/minharefeicao/`. Os pacotes são `dominio` (entidades, valores e estados), `fronteira` (tela e gateways), `controle` (controlador), `colecao` (catálogos), `persistencia` (repositórios e TXT), `servico` (confirmação) e `dto` (dados de entrada e resposta). `Main.java` inicia a aplicação; `test/minharefeicao/Cenarios.java` verifica os cenários. O [README](../README.md#organização) contém links para todas as classes do modelo de domínio.
+
+Os nomes e responsabilidades dos diagramas são mantidos. A separação introduziu imports, visibilidade pública nos pontos usados entre pacotes e métodos de leitura dos atributos; o comportamento do caso de uso permanece o mesmo. No vídeo, trechos exibidos nos antigos arquivos agrupadores correspondem agora aos arquivos individuais com o nome de cada classe.
+
 Os números de mensagem são os da [modelagem publicada na Wiki](https://github.com/Felipevhonorato/ProjSoft-Entrega1---Prot-tipo-Sequencia-de-telas-e-Lista-de-classes-candidatas-Identificadas/wiki/Entrega-N2-Modelagem-de-Projeto). As cinco primeiras interações são partes de uma mesma contratação; o controlador conserva a mesma assinatura e o mesmo pedido.
 
 | Interação | Mensagens representativas | Implementação |
