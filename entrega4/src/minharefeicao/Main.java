@@ -1,10 +1,19 @@
 package minharefeicao;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.PrintWriter;
+import java.io.BufferedReader;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.io.OutputStreamWriter;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.*;
+
+import minharefeicao.fronteira.TelaAssinatura;
+import minharefeicao.fronteira.GatewaySMS;
+import minharefeicao.controle.ControladorAssinatura;
 
 public final class Main {
     public static void main(String[] args) throws IOException {
