@@ -21,7 +21,8 @@ No Linux ou macOS, na mesma pasta:
 
 ```bash
 mkdir -p build
-javac --release 17 -encoding UTF-8 -d build src/minharefeicao/*.java
+find src -name '*.java' > build/fontes.txt
+javac --release 17 -encoding UTF-8 -d build @build/fontes.txt
 java -cp build minharefeicao.Main dados
 ```
 
@@ -49,7 +50,8 @@ Nenhum código SMS ou dado completo de cartão é persistido. A pasta de dados l
 
 ```bash
 mkdir -p build
-javac --release 17 -encoding UTF-8 -d build src/minharefeicao/*.java test/minharefeicao/*.java
+find src test -name '*.java' > build/fontes.txt
+javac --release 17 -encoding UTF-8 -d build @build/fontes.txt
 java -cp build minharefeicao.Cenarios evidencias
 ```
 
@@ -57,11 +59,37 @@ Os cinco cenários usam a mesma `TelaAssinatura` do programa interativo: sucesso
 
 ## Organização
 
-| Arquivo | Responsabilidade |
+Cada classe, record ou enum tem seu próprio arquivo, com o mesmo nome do tipo Java. As pastas correspondem aos pacotes e às responsabilidades do projeto.
+
+| Pasta ou arquivo | Responsabilidade |
 |---|---|
-| `Main.java` | Inicia a aplicação e fornece a entrada e a saída do terminal |
-| `TelaAssinatura.java` | Fronteira que recebe as ações e exibe os resultados |
-| `ControladorAssinatura.java` | Coordena as etapas e delega as regras |
-| `Dominio.java` | Entidades, valores e estados do caso de uso |
-| `Infraestrutura.java` | Catálogos, gateways simulados, serviço de confirmação e repositórios TXT |
-| `Cenarios.java` | Demonstrações automatizadas e verificações |
+| [Main.java](src/minharefeicao/Main.java) | Ponto de entrada da aplicação |
+| [dominio/](src/minharefeicao/dominio/) | Classes do modelo de domínio e seus estados |
+| [fronteira/](src/minharefeicao/fronteira/) | TelaAssinatura e gateways simulados de SMS e pagamento |
+| [controle/](src/minharefeicao/controle/) | ControladorAssinatura: coordena a contratação |
+| [colecao/](src/minharefeicao/colecao/) | CatalogoPlanos e CatalogoRefeicoes |
+| [persistencia/](src/minharefeicao/persistencia/) | RepositorioAssinantes, RepositorioAssinaturas e ArquivoTxt |
+| [servico/](src/minharefeicao/servico/) | ServicoConfirmacao: protocolo e previsão da entrega |
+| [dto/](src/minharefeicao/dto/) | DadosEndereco, DadosCartao e ResultadoAutorizacao |
+| [Cenarios.java](test/minharefeicao/Cenarios.java) | Demonstrações automatizadas e verificações |
+
+### Onde encontrar as classes do modelo de domínio
+
+Todas estão em `src/minharefeicao/dominio/`:
+
+| Conceito do modelo | Arquivo Java |
+|---|---|
+| Assinante | [Assinante.java](src/minharefeicao/dominio/Assinante.java) |
+| Plano de assinatura | [PlanoAssinatura.java](src/minharefeicao/dominio/PlanoAssinatura.java) |
+| Assinatura | [Assinatura.java](src/minharefeicao/dominio/Assinatura.java) |
+| Preferência alimentar | [PreferenciaAlimentar.java](src/minharefeicao/dominio/PreferenciaAlimentar.java), enum com as opções do protótipo |
+| Cardápio | [Cardapio.java](src/minharefeicao/dominio/Cardapio.java) |
+| Refeição | [Refeicao.java](src/minharefeicao/dominio/Refeicao.java) |
+| Pedido | [Pedido.java](src/minharefeicao/dominio/Pedido.java) |
+| Item do pedido | [ItemPedido.java](src/minharefeicao/dominio/ItemPedido.java) |
+| Endereço | [Endereco.java](src/minharefeicao/dominio/Endereco.java) |
+| Pagamento | [Pagamento.java](src/minharefeicao/dominio/Pagamento.java) |
+| Cartão de crédito | [CartaoCredito.java](src/minharefeicao/dominio/CartaoCredito.java) |
+| Operadora de cartão | [OperadoraCartaoCredito.java](src/minharefeicao/dominio/OperadoraCartaoCredito.java) |
+
+Para acompanhar o fluxo no código, comece por `Main` → `fronteira/TelaAssinatura` → `controle/ControladorAssinatura`. O controlador chama o domínio, os catálogos, os serviços e a persistência conforme as etapas dos diagramas. Os antigos arquivos agrupadores `Dominio.java` e `Infraestrutura.java` foram substituídos pelos arquivos individuais.
