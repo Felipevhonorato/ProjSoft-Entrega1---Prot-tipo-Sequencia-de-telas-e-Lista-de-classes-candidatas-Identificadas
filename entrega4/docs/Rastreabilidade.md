@@ -20,3 +20,25 @@ Os números de mensagem são os da [modelagem publicada na Wiki](https://github.
 - `BigDecimal` representa valores monetários, `LocalDate` representa a previsão e `UUID` identifica assinaturas e pagamentos.
 - O desafio SMS fica na sessão. O gateway de pagamento aceita identificadores fictícios e não realiza cobrança. O serviço de confirmação prevê a próxima segunda-feira e gera protocolo único.
 - O repositório mantém a composição e as tentativas em um TXT por assinatura. Um pedido contém seus itens e é associado à assinatura; os catálogos apenas disponibilizam opções.
+
+## Correspondência estrutural e diferenças de representação
+
+O modelo de domínio da Entrega 2 descreve os conceitos do negócio, sem controladores nem operações de software. A página de domínio com métodos é uma visão complementar; os diagramas de classes de projeto da N2 descrevem as responsabilidades implementadas. O fluxo principal continua único, dividido em cinco imagens; os três fluxos alternativos conservam a numeração das entregas anteriores.
+
+| Elemento do projeto | Representação Java e justificativa |
+|---|---|
+| Assinante, PlanoAssinatura e Refeicao identificados no modelo | Celular identifica o assinante; `int` identifica planos e `String` identifica refeições. Esses identificadores locais substituem UUIDs do desenho, mantendo a identidade e as referências. Assinatura, Pedido e Pagamento usam UUID. |
+| Assinatura → PlanoAssinatura | O plano é um `record` imutável conservado na contratação. Valor e periodicidade são obtidos dessa referência; quantidade e limites também são gravados no TXT. |
+| Pedido ◆— ItemPedido → Refeicao | O mapa privado do pedido possui os itens, sem compartilhá-los entre pedidos. Cada item mantém referência à refeição do catálogo. Desmarcar remove o item; itens existentes têm quantidade 1. |
+| PreferenciaAlimentar | Enum representa as três opções do protótipo. A coleção permite o vínculo conceitual; a interface solicita uma opção. Toda contratação exige confirmação, mesmo com cadastro anterior. |
+| Cardapio, CodigoConfirmacao e estados | Cardapio consulta o catálogo; o desafio SMS é um objeto da sessão. `erros` e `encerrado` implementam bloqueio/invalidação, sem persistir o código. A implementação não mantém IDs para esses objetos transitórios. |
+| DadosEndereco e Endereco | Os campos ficam agrupados em um `record` DadosEndereco, guardado pelo Endereco. A entidade valida os campos obrigatórios antes de alterar a assinatura. |
+| DadosCartao e CartaoCredito | O adaptador de demonstração usa apenas `1111`/`0000`, sem solicitar número completo, titular, validade ou CVV do desenho da integração. CartaoCredito guarda esse identificador fictício. GatewayOperadora mantém a resposta de autorização usada no cenário. |
+| Pagamento | Cada tentativa tem UUID, valor, data/hora com fuso, cartão, operadora, resultado e código de autorização. Esses dados são gravados separadamente no histórico da assinatura. |
+| Fronteira e controlador | Os métodos de exibição sem argumentos consultam o contexto pelo controlador. Operações que no modelo devolvem a resposta à tela retornam booleanos ou ResultadoCodigo; a TelaAssinatura decide qual método de exibição chamar. Os nomes das ações do caso de uso são preservados. |
+
+Não há cobrança ou SMS real. A gravação é atômica por arquivo quando suportada; não existe transação entre os arquivos de assinante e assinatura. Não há retomada de contratação em outra sessão. Essas limitações delimitam a demonstração e não acrescentam novos fluxos ao caso de uso.
+
+## Verificação da implementação
+
+`executar.ps1 -Testar` executa os cinco cenários pela fronteira de terminal e outras nove combinações de três planos com três preferências pelo controlador. As verificações adicionais incluem cadastro existente, confirmação de preferências na sessão atual, ordem das etapas, filtros, limites das três categorias, seleção repetida sem duplicação, quantidade inválida sem alteração, bloqueio de pagamento repetido, próxima segunda-feira e leitura do TXT com identificador do pedido e data/hora do pagamento.
