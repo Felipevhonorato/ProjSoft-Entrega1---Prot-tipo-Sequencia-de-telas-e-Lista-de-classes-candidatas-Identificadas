@@ -69,10 +69,14 @@ final class ItemPedido {
     private int quantidade;
     ItemPedido(Refeicao refeicao, int quantidade) { this.refeicao = refeicao; alterarQuantidade(quantidade); }
     int obterQuantidade() { return quantidade; }
-    void alterarQuantidade(int quantidade) { this.quantidade = quantidade; }
+    void alterarQuantidade(int quantidade) {
+        if (quantidade != 1) throw new IllegalArgumentException("Item selecionado deve ter quantidade 1; desmarcar remove o item do pedido.");
+        this.quantidade = quantidade;
+    }
 }
 
 final class Pedido {
+    final UUID id = UUID.randomUUID();
     private final Map<String, ItemPedido> itens = new LinkedHashMap<>();
     StatusPedido status = StatusPedido.EM_MONTAGEM;
     LocalDate previsao;
@@ -125,6 +129,7 @@ record ResultadoAutorizacao(boolean autorizado, String codigoAutorizacao) {}
 
 final class Pagamento {
     final UUID id = UUID.randomUUID();
+    final java.time.OffsetDateTime dataHora = java.time.OffsetDateTime.now(java.time.ZoneId.of("America/Sao_Paulo"));
     final BigDecimal valor;
     final CartaoCredito cartao;
     final OperadoraCartaoCredito operadora;
