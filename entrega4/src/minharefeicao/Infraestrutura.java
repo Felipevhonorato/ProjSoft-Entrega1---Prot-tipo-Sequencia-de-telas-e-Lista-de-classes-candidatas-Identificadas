@@ -137,6 +137,10 @@ record RepositorioAssinaturas(Path pasta) {
         dados.setProperty("plano.id", Integer.toString(a.plano.id()));
         dados.setProperty("plano.periodicidade", a.plano.periodicidade());
         dados.setProperty("plano.valor", a.obterValor().toPlainString());
+        dados.setProperty("plano.quantidadeRefeicoes", Integer.toString(a.plano.quantidade()));
+        dados.setProperty("plano.maxAcompanhamentos", Integer.toString(a.plano.acompanhamentos()));
+        dados.setProperty("plano.maxSobremesas", Integer.toString(a.plano.sobremesas()));
+        dados.setProperty("pedido.id", a.pedido.id.toString());
         dados.setProperty("pedido.status", a.pedido.status.name());
         if (a.pedido.previsao != null) dados.setProperty("pedido.previsao", a.pedido.previsao.toString());
         int i = 0;
@@ -161,6 +165,7 @@ record RepositorioAssinaturas(Path pasta) {
         for (Pagamento pagamento : a.pagamentos()) {
             String chave = "pagamento." + (++i) + ".";
             dados.setProperty(chave+"id", pagamento.id.toString());
+            dados.setProperty(chave+"dataHora", pagamento.dataHora.toString());
             dados.setProperty(chave+"status", pagamento.status.name());
             dados.setProperty(chave+"valor", pagamento.valor.toPlainString());
             dados.setProperty(chave+"cartaoFinal", pagamento.cartao.ultimosDigitos());
