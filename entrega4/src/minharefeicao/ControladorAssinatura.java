@@ -19,6 +19,7 @@ final class ControladorAssinatura {
     private Assinante assinante;
     private Assinatura assinatura;
     private int etapaCategoria;
+    private boolean preferenciasConfirmadas;
     private boolean resumoConfirmado;
     private boolean encerrado;
 
@@ -65,11 +66,13 @@ final class ControladorAssinatura {
             throw new IllegalStateException("Preferências já aplicadas ao pedido.");
         if (preferencias.size() != 1) throw new IllegalArgumentException("Escolha uma preferência.");
         assinante.registrarPreferencias(preferencias);
+        preferenciasConfirmadas = true;
         assinantes.salvar(assinante);
         assinaturas.salvar(assinatura);
     }
     CategoriaRefeicao categoriaAtual() {
         exigirMontagem();
+        if (!preferenciasConfirmadas) throw new IllegalStateException("Confirme as preferências desta contratação.");
         if (etapaCategoria >= CategoriaRefeicao.values().length) throw new IllegalStateException("Seleção concluída.");
         return CategoriaRefeicao.values()[etapaCategoria];
     }
