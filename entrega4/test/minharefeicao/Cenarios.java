@@ -1,11 +1,36 @@
 package minharefeicao;
 
-import java.io.*;
+import java.io.PrintWriter;
+import java.io.BufferedReader;
+import java.io.StringWriter;
+import java.io.StringReader;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.DayOfWeek;
+import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 
-/** Executa a mesma TelaAssinatura usada no modo interativo, com entradas reproduzíveis. */
+import minharefeicao.dominio.Assinante;
+import minharefeicao.dominio.Pedido;
+import minharefeicao.dominio.ItemPedido;
+import minharefeicao.dominio.Pagamento;
+import minharefeicao.dominio.PreferenciaAlimentar;
+import minharefeicao.dominio.CategoriaRefeicao;
+import minharefeicao.dto.DadosEndereco;
+import minharefeicao.dto.DadosCartao;
+import minharefeicao.fronteira.TelaAssinatura;
+import minharefeicao.fronteira.GatewaySMS;
+import minharefeicao.controle.ControladorAssinatura;
+import minharefeicao.colecao.CatalogoPlanos;
+import minharefeicao.colecao.CatalogoRefeicoes;
+import minharefeicao.persistencia.ArquivoTxt;
+import minharefeicao.persistencia.RepositorioAssinantes;
+
 public final class Cenarios {
     public static void main(String[] args) throws IOException {
         Path evidencias = args.length > 0 ? Path.of(args[0]) : Path.of("evidencias");
@@ -40,7 +65,7 @@ public final class Cenarios {
             }
         }) { new TelaAssinatura(entrada,saida,ctrl).executar(); }
         var a = ctrl.resumo();
-        var arquivo = dados.resolve("assinaturas").resolve(a.id+".txt");
+        var arquivo = dados.resolve("assinaturas").resolve(a.obterId()+".txt");
         var persistido = ArquivoTxt.ler(arquivo);
         exigir(status.equals(persistido.getProperty("assinatura.status")), "Estado da assinatura");
         boolean ativo = status.equals("ATIVA");
@@ -50,7 +75,7 @@ public final class Cenarios {
         exigir("119.40".equals(persistido.getProperty("plano.valor")), "Preço do plano preservado");
         exigir("00000000".equals(persistido.getProperty("entrega.cep")), "Endereço gravado");
         var leitor = new RepositorioAssinantes(dados).obterOuCadastrar("11999990000");
-        exigir(leitor.celularValidado && leitor.preferencias.contains(PreferenciaAlimentar.TRADICIONAL), "Assinante relido");
+        exigir(leitor.obterCelularValidado() && leitor.obterPreferencias().contains(PreferenciaAlimentar.TRADICIONAL), "Assinante relido");
         var tentativas = cartoes.stream().filter(c -> !c.equals("desistir")).toList();
         exigir(Integer.toString(tentativas.size()).equals(persistido.getProperty("pagamento.tentativas")), "Histórico das tentativas");
         for (int i=0;i<tentativas.size();i++) {
@@ -64,8 +89,8 @@ public final class Cenarios {
         }
         if (exceder) {
             exigir(log.toString().contains("Pedido não alterado (6 selecionados)"), "Excesso rejeitado sem mutação");
-            exigir(a.pedido.obterItens().stream().anyMatch(i -> i.refeicao.id().equals("TP7")), "Ajuste aceito");
-            exigir(a.pedido.obterItens().stream().noneMatch(i -> i.refeicao.id().equals("TP6")), "Item removido");
+            exigir(a.obterPedido().obterItens().stream().anyMatch(i -> i.obterRefeicao().id().equals("TP7")), "Ajuste aceito");
+            exigir(a.obterPedido().obterItens().stream().noneMatch(i -> i.obterRefeicao().id().equals("TP6")), "Item removido");
         }
         try {
             ctrl.processarPagamento(new DadosCartao("1111"));
@@ -88,7 +113,7 @@ public final class Cenarios {
                 repositorio.salvar(existente);
                 var ctrl = new ControladorAssinatura(dados, new GatewaySMS(new PrintWriter(new StringWriter())), () -> "1234");
                 rejeitar(() -> ctrl.selecionarPlano(plano.id()), "Plano antes do SMS");
-                ctrl.solicitarCodigo(existente.celular);
+                ctrl.solicitarCodigo(existente.obterCelular());
                 ctrl.validarCodigo("1234");
                 ctrl.selecionarPlano(plano.id());
                 rejeitar(() -> ctrl.listarRefeicoes(), "Preferência antiga não confirma nova contratação");
@@ -113,14 +138,14 @@ public final class Cenarios {
                 ctrl.definirEndereco(new DadosEndereco("00000000", "Rua Fictícia", "100", "", "Bairro", "Cidade"));
                 exigir(ctrl.processarPagamento(new DadosCartao("1111")), "Autorização");
                 var a = ctrl.resumo();
-                var persistido = ArquivoTxt.ler(dados.resolve("assinaturas").resolve(a.id + ".txt"));
-                exigir(a.pedido.id.toString().equals(persistido.getProperty("pedido.id")), "Pedido identificado em disco");
+                var persistido = ArquivoTxt.ler(dados.resolve("assinaturas").resolve(a.obterId() + ".txt"));
+                exigir(a.obterPedido().obterId().toString().equals(persistido.getProperty("pedido.id")), "Pedido identificado em disco");
                 exigir(Integer.toString(plano.quantidade()).equals(persistido.getProperty("plano.quantidadeRefeicoes")), "Quantidade contratada em disco");
                 exigir(plano.valor().toPlainString().equals(persistido.getProperty("plano.valor")), "Valor contratado");
                 exigir(Integer.toString(plano.quantidade()+plano.acompanhamentos()+plano.sobremesas()).equals(persistido.getProperty("pedido.itens")), "Composição persistida");
                 java.time.OffsetDateTime.parse(persistido.getProperty("pagamento.1.dataHora"));
-                exigir(a.pedido.previsao.isAfter(java.time.LocalDate.now(java.time.ZoneId.of("America/Sao_Paulo")))
-                        && a.pedido.previsao.getDayOfWeek() == java.time.DayOfWeek.MONDAY, "Próxima segunda-feira");
+                exigir(a.obterPedido().obterPrevisao().isAfter(java.time.LocalDate.now(java.time.ZoneId.of("America/Sao_Paulo")))
+                        && a.obterPedido().obterPrevisao().getDayOfWeek() == java.time.DayOfWeek.MONDAY, "Próxima segunda-feira");
                 rejeitar(() -> ctrl.processarPagamento(new DadosCartao("1111")), "Pagamento duplicado");
                 System.out.println("OK catálogo e contratos | plano=" + plano.id() + " | " + preferencia);
             }
@@ -135,3 +160,4 @@ public final class Cenarios {
         if (!ok) throw new AssertionError(regra);
     }
 }
+
