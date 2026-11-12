@@ -53,7 +53,7 @@ javac --release 17 -encoding UTF-8 -d build src/minharefeicao/*.java test/minhar
 java -cp build minharefeicao.Cenarios evidencias
 ```
 
-O teste usa a mesma `TelaAssinatura` do programa interativo. São cinco execuções: sucesso, SMS bloqueado e reenviado, limite e ajuste, recusa com nova tentativa e recusa com desistência. Os testes relêem os arquivos TXT e verificam estados, itens, endereço, protocolo e histórico. Os registros gerados ficam em `evidencias/`.
+Os cinco cenários usam a mesma `TelaAssinatura` do programa interativo: sucesso, SMS bloqueado e reenviado, limite e ajuste, recusa com nova tentativa e recusa com desistência. Outras nove execuções pelo controlador cobrem os três planos com as três preferências, os limites de cada categoria e a ordem das etapas, incluindo um assinante já cadastrado. Os testes relêem os arquivos TXT e verificam estados, itens, endereço, protocolo, identificação do pedido, data/hora e histórico de pagamentos. Os registros gerados ficam em `evidencias/`.
 
 ## Organização
 
