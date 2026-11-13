@@ -28,6 +28,29 @@ java -cp build minharefeicao.Main dados
 
 Use dados fictícios. Exemplo: celular `11999990000`; o código SMS aparece no terminal. Escolha plano `1` e preferência `TRADICIONAL`. Marque `TP1` a `TP6`, uma entrada por linha, e digite `continuar`. Marque `TA1` e avance; marque `TS1` e avance. Digite `confirmar` no resumo e informe CEP fictício de oito dígitos, rua, número, complemento opcional, bairro e cidade. `1111` autoriza e `0000` recusa. Esses identificadores não são números reais de cartão.
 
+### Quantidades e nomes no cardápio
+
+Cada opção mostra ID e nome, como `TP1: Frango grelhado com arroz e feijão`, `TA1: Arroz branco` e `TS1: Pudim de leite`. Os catálogos de demonstração respeitam o filtro da preferência selecionada.
+
+| Entrada | Resultado |
+|---|---|
+| `TP1` | Acrescenta uma unidade; repetir acrescenta outra |
+| `-TP1` | Retira uma unidade; ao chegar a zero, remove o item |
+| `TP1 3` | Define o total desse prato como três unidades |
+| `TP1 0` | Remove todas as unidades desse prato |
+| `continuar` | Avança apenas se a categoria estiver completa |
+
+Os limites contam **unidades**, não pratos distintos. No plano 1, `TP1 3` e `TP2 3` completam os seis pratos principais. Acompanhamentos e sobremesas também podem repetir e mantêm seus limites próprios. Alterações acima do limite são recusadas sem modificar as quantidades anteriores. O resumo, o total selecionado e os arquivos TXT conservam as quantidades de cada item. O preço continua sendo o do plano.
+
+### Validação imediata do endereço
+
+A tela repete somente o campo inválido, sem pedir novamente os campos já aceitos. A regra fica em `Endereco.validarCampo`; o controlador a encaminha e a entidade também revalida todos os campos no construtor.
+
+- CEP: oito dígitos, com ou sem hífen. É uma validação de formato, sem consulta a serviço postal.
+- Rua, bairro e cidade: preenchimento com letras; nomes como `Rua 25 de Março` são aceitos.
+- Número: exemplos aceitos `100`, `100-A` e `S/N`.
+- Complemento: opcional, aceita Enter sem preenchimento.
+
 ## Exercitar os fluxos alternativos
 
 | Fluxo | Como reproduzir | Resultado esperado |
@@ -55,7 +78,7 @@ javac --release 17 -encoding UTF-8 -d build @build/fontes.txt
 java -cp build minharefeicao.Cenarios evidencias
 ```
 
-Os cinco cenários usam a mesma `TelaAssinatura` do programa interativo: sucesso, SMS bloqueado e reenviado, limite e ajuste, recusa com nova tentativa e recusa com desistência. Outras nove execuções pelo controlador cobrem os três planos com as três preferências, os limites de cada categoria e a ordem das etapas, incluindo um assinante já cadastrado. Os testes relêem os arquivos TXT e verificam estados, itens, endereço, protocolo, identificação do pedido, data/hora e histórico de pagamentos. Os registros gerados ficam em `evidencias/`.
+Os cinco cenários originais usam a mesma `TelaAssinatura` do programa interativo: sucesso, SMS bloqueado e reenviado, limite e ajuste, recusa com nova tentativa e recusa com desistência. Um sexto cenário pela tela testa refeições repetidas, definição e redução de quantidades, nomes no resumo e correção imediata de cada campo do endereço. Outras nove execuções pelo controlador cobrem os três planos com as três preferências, os limites de cada categoria e a ordem das etapas, incluindo um assinante já cadastrado. Os testes relêem os arquivos TXT e verificam estados, itens, endereço, protocolo, identificação do pedido, data/hora e histórico de pagamentos. Os registros gerados ficam em `evidencias/`.
 
 ## Organização
 
