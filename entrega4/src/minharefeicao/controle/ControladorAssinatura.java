@@ -11,6 +11,7 @@ import minharefeicao.dominio.Assinatura;
 import minharefeicao.dominio.Refeicao;
 import minharefeicao.dominio.Pedido;
 import minharefeicao.dominio.Endereco;
+import minharefeicao.dominio.CampoEndereco;
 import minharefeicao.dominio.Pagamento;
 import minharefeicao.dominio.CartaoCredito;
 import minharefeicao.dominio.Cardapio;
@@ -117,6 +118,14 @@ public final class ControladorAssinatura {
         return true;
     }
     public int limiteAtual() { return assinatura.obterPlano().limite(categoriaAtual()); }
+    public boolean ajustarQuantidade(String id, int variacao) {
+        categoriaAtual();
+        var refeicao = refeicoes.obter(id);
+        int atual = assinatura.obterPedido().quantidadeDaRefeicao(refeicao);
+        if (variacao != 1 && variacao != -1) throw new IllegalArgumentException("Ajuste deve acrescentar ou retirar uma unidade.");
+        if (atual == 0 && variacao == -1) throw new IllegalArgumentException("Esta refeição ainda não foi selecionada.");
+        return selecionarRefeicao(id, atual + variacao);
+    }
     public int quantidadeAtual() { return assinatura.obterPedido().quantidadeSelecionada(categoriaAtual()); }
     public boolean continuarCategoria() {
         if (!assinatura.obterPlano().categoriaCompleta(categoriaAtual(), quantidadeAtual())) return false;
@@ -135,6 +144,11 @@ public final class ControladorAssinatura {
         assinatura.definirEndereco(new Endereco(dados));
         assinatura.aguardarPagamento();
         assinaturas.salvar(assinatura);
+    }
+    public void validarCampoEndereco(CampoEndereco campo, String valor) {
+        exigirMontagem();
+        if (!resumoConfirmado) throw new IllegalStateException("Confirme o resumo.");
+        Endereco.validarCampo(campo, valor);
     }
     public boolean processarPagamento(DadosCartao dados) {
         if (encerrado || assinatura == null || assinatura.obterStatus() != StatusAssinatura.AGUARDANDO_PAGAMENTO)
