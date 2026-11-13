@@ -23,7 +23,7 @@ public final class Pedido {
     public boolean definirSelecao(Refeicao refeicao, int quantidade, PlanoAssinatura plano) {
         if (status != StatusPedido.EM_MONTAGEM) throw new IllegalStateException("Pedido já aprovado.");
         var categoria = refeicao.categoria();
-        if ((quantidade != 0 && quantidade != 1)
+        if (quantidade < 0 || quantidade > plano.limite(categoria)
                 || !plano.aceitaQuantidade(categoria, totalProjetado(categoria, refeicao, quantidade))) return false;
         if (quantidade == 0) itens.remove(refeicao.id());
         else if (itens.containsKey(refeicao.id())) itens.get(refeicao.id()).alterarQuantidade(quantidade);
@@ -31,6 +31,10 @@ public final class Pedido {
         return true;
     }
     public List<ItemPedido> obterItens() { return List.copyOf(itens.values()); }
+    public int quantidadeDaRefeicao(Refeicao refeicao) {
+        var item = itens.get(refeicao.id());
+        return item == null ? 0 : item.obterQuantidade();
+    }
     public void definirPrevisao(LocalDate previsao) { this.previsao = previsao; }
     public void aprovar() {
         if (previsao == null) throw new IllegalStateException("Defina a previsão.");

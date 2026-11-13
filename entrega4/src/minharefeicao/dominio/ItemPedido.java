@@ -7,7 +7,7 @@ public final class ItemPedido {
     public ItemPedido(Refeicao refeicao, int quantidade) { this.refeicao = refeicao; alterarQuantidade(quantidade); }
     public int obterQuantidade() { return quantidade; }
     public void alterarQuantidade(int quantidade) {
-        if (quantidade != 1) throw new IllegalArgumentException("Item selecionado deve ter quantidade 1; desmarcar remove o item do pedido.");
+        if (quantidade <= 0) throw new IllegalArgumentException("A quantidade do item deve ser positiva; quantidade zero remove o item do pedido.");
         this.quantidade = quantidade;
     }
 
