@@ -13,6 +13,7 @@ import minharefeicao.dominio.Pagamento;
 import minharefeicao.dominio.PreferenciaAlimentar;
 import minharefeicao.dominio.CategoriaRefeicao;
 import minharefeicao.dominio.ResultadoCodigo;
+import minharefeicao.dominio.CampoEndereco;
 import minharefeicao.dto.DadosEndereco;
 import minharefeicao.dto.DadosCartao;
 import minharefeicao.controle.ControladorAssinatura;
@@ -49,14 +50,26 @@ public final class TelaAssinatura {
         for (CategoriaRefeicao ignorada : CategoriaRefeicao.values()) {
             exibirRefeicoes();
             while (true) {
-                String escolha = ler("ID para marcar, -ID para desmarcar ou continuar");
+                String escolha = ler("ID acrescenta 1, -ID retira 1, ID quantidade define o total, ou continuar");
                 if (escolha.equalsIgnoreCase("continuar")) {
                     if (continuarCategoria()) break;
                     saida.println("Complete a seleção desta categoria.");
                 } else {
                     tentarUmaVez(() -> {
-                        boolean remover = escolha.startsWith("-");
-                        if (selecionarRefeicao(remover ? escolha.substring(1) : escolha, remover ? 0 : 1))
+                        String[] partes = escolha.split("\\s+");
+                        if (partes.length > 2 || partes[0].isBlank())
+                            throw new IllegalArgumentException("Use ID, -ID ou ID quantidade (ex.: TP1 3).");
+                        boolean aceita;
+                        if (partes.length == 2) {
+                            if (partes[0].startsWith("-")) throw new IllegalArgumentException("Use ID quantidade para definir o total.");
+                            int quantidade = Integer.parseInt(partes[1]);
+                            if (quantidade < 0) throw new IllegalArgumentException("A quantidade não pode ser negativa.");
+                            aceita = selecionarRefeicao(partes[0], quantidade);
+                        } else {
+                            boolean remover = partes[0].startsWith("-");
+                            aceita = ctrl.ajustarQuantidade(remover ? partes[0].substring(1) : partes[0], remover ? -1 : 1);
+                        }
+                        if (aceita)
                             exibirSelecao();
                         else exibirLimite(ctrl.limiteAtual());
                         return true;
@@ -69,11 +82,9 @@ public final class TelaAssinatura {
             saida.println("Confirme a composição do pedido.");
         confirmarResumo();
         solicitarEndereco();
-        tentar(() -> {
-            informarEndereco(new DadosEndereco(ler("CEP"), ler("Rua"), ler("Número"),
-                    ler("Complemento opcional"), ler("Bairro"), ler("Cidade")));
-            return true;
-        });
+        informarEndereco(new DadosEndereco(lerCampoEndereco(CampoEndereco.CEP), lerCampoEndereco(CampoEndereco.LOGRADOURO),
+                lerCampoEndereco(CampoEndereco.NUMERO), lerCampoEndereco(CampoEndereco.COMPLEMENTO),
+                lerCampoEndereco(CampoEndereco.BAIRRO), lerCampoEndereco(CampoEndereco.CIDADE)));
         exibirPagamento();
         while (true) {
             String teste = ler("Cartão de teste: 1111 aprova, 0000 recusa ou desistir");
@@ -110,7 +121,12 @@ public final class TelaAssinatura {
         saida.printf("%s | limite %d%n", ctrl.categoriaAtual(), ctrl.limiteAtual());
         for (var r : ctrl.listarRefeicoes()) saida.printf("%s: %s%n", r.id(), r.nome());
     }
-    public void exibirSelecao() { saida.printf("Selecionados na categoria: %d/%d%n", ctrl.quantidadeAtual(), ctrl.limiteAtual()); }
+    public void exibirSelecao() {
+        saida.printf("Selecionados na categoria: %d/%d%n", ctrl.quantidadeAtual(), ctrl.limiteAtual());
+        for (var item : ctrl.resumo().obterPedido().obterItens())
+            if (item.obterRefeicao().categoria() == ctrl.categoriaAtual())
+                saida.printf("  %s: %s x%d%n", item.obterRefeicao().id(), item.obterRefeicao().nome(), item.obterQuantidade());
+    }
     public void exibirLimite(int limite) {
         saida.printf("Limite de %d excedido. Pedido não alterado (%d selecionados). Ajuste a seleção.%n",
                 limite, ctrl.quantidadeAtual());
@@ -144,6 +160,13 @@ public final class TelaAssinatura {
         String linha = entrada.readLine();
         if (linha == null) throw new EOFException("Sessão encerrada antes da conclusão.");
         return linha.strip();
+    }
+    private String lerCampoEndereco(CampoEndereco campo) throws IOException {
+        return tentar(() -> {
+            String valor = ler(campo.rotulo());
+            ctrl.validarCampoEndereco(campo, valor);
+            return valor;
+        });
     }
     @FunctionalInterface private interface Entrada<T> { T ler() throws IOException; }
     private <T> T tentar(Entrada<T> entrada) throws IOException {
