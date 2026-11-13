@@ -194,7 +194,7 @@ end
 cr --> ca : opcoes
 ca --> c : opcoes
 c -> t : 03.04 exibirRefeicoes(opcoes, categoria)
-loop até confirmar a categoria; cada clique define quantidade 0 ou 1
+loop até confirmar a categoria; quantidade total desejada: inteiro >= 0; repetir soma unidades
 u -> t : 03.05 selecionarRefeicao(idRefeicao, quantidade)
 t -> c : 03.06 selecionarRefeicao(idRefeicao, quantidade)
 c -> cr : 03.07 refeicao := obter(idRefeicao)
@@ -202,16 +202,17 @@ c -> p : 03.08 aceita := definirSelecao(refeicao, quantidade, plano)
 p -> p : 03.09 total := totalProjetado(categoria, refeicao, quantidade)
 p -> pl : 03.10 aceita := aceitaQuantidade(categoria, total)
 alt aceita = true
-alt quantidade = 1 e item ainda não existe
+alt quantidade > 0 e item ainda não existe
 create participant "item : ItemPedido" as i <<Entidade>>
 p --> i : 03.11 «create» ItemPedido(refeicao, quantidade)
-else item já existe e quantidade = 1
+else item já existe e quantidade > 0
 p -> i : 03.12 alterarQuantidade(quantidade)
 else quantidade = 0
 note right of p : Remove da composição o item selecionado, se existir.
 end
 c -> rs : 03.13 salvar(assinatura)
 c -> p : 03.14 itens := obterItens()
+p --> c : itens
 c -> t : 03.15 exibirSelecao(itens)
 else aceita = false
 ref over u,t,c,p,pl : Fluxo alternativo 2 - manter seleção anterior e informar limite (diagrama 07)
@@ -275,6 +276,12 @@ end box
 u -> t : 04.01 confirmarResumo()
 t -> c : 04.02 confirmarResumo()
 c -> t : 04.03 solicitarEndereco()
+note over t,c
+Refinamento da entrada: a cada campo, a tela chama
+ControladorAssinatura.validarCampoEndereco(campo, valor),
+que delega a Endereco.validarCampo(campo, valor).
+Em erro, repete somente o campo atual, sem avançar.
+end note
 u -> t : 04.04 informarEndereco(dadosEndereco)
 t -> c : 04.05 definirEndereco(dadosEndereco)
 note over t,c : Pré-condição: campos obrigatórios preenchidos, conforme protótipo.
@@ -850,6 +857,7 @@ class Refeicao <<Entidade>> {
 +compativel(plano: PlanoAssinatura, preferencias: PreferenciaAlimentar[1..*], categoria: CategoriaRefeicao): Boolean
 }
 class Pedido <<Entidade>> {
++quantidadeDaRefeicao(refeicao: Refeicao): Integer
 -id: UUID
 -status: StatusPedido
 -previsaoPrimeiraEntrega: Date [0..1]
@@ -871,6 +879,8 @@ class TelaAssinatura <<Fronteira>> {
 +exibirResumo(assinatura: Assinatura): void
 }
 class ControladorAssinatura <<Controller>> {
++ajustarQuantidade(idRefeicao: String, variacao: Integer): Boolean
++validarCampoEndereco(campo: CampoEndereco, valor: String): void
 +selecionarRefeicao(idRefeicao: UUID, quantidade: Integer): void
 +continuarCategoria(): void
 }
@@ -951,6 +961,7 @@ class Assinatura <<Entidade>> {
 +obterValor(): Decimal
 }
 class Endereco <<Entidade>> {
++{static} validarCampo(campo: CampoEndereco, valor: String): void
 -cep: String
 -logradouro: String
 -numero: String
@@ -966,6 +977,8 @@ class TelaAssinatura <<Fronteira>> {
 +exibirPagamento(valor: Decimal): void
 }
 class ControladorAssinatura <<Controller>> {
++ajustarQuantidade(idRefeicao: String, variacao: Integer): Boolean
++validarCampoEndereco(campo: CampoEndereco, valor: String): void
 +confirmarResumo(): void
 +definirEndereco(dados: DadosEndereco): void
 }
@@ -1465,6 +1478,7 @@ class Refeicao <<Entidade>> {
 +compativel(plano: PlanoAssinatura, preferencias: PreferenciaAlimentar[1..*], categoria: CategoriaRefeicao): Boolean
 }
 class Pedido <<Entidade>> {
++quantidadeDaRefeicao(refeicao: Refeicao): Integer
 -id: UUID
 -status: StatusPedido
 -previsaoPrimeiraEntrega: Date [0..1]
@@ -1483,6 +1497,7 @@ class ItemPedido <<Entidade>> {
 +obterQuantidade(): Integer
 }
 class Endereco <<Entidade>> {
++{static} validarCampo(campo: CampoEndereco, valor: String): void
 -cep: String
 -logradouro: String
 -numero: String
@@ -1547,6 +1562,8 @@ class TelaAssinatura <<Fronteira>> {
 +exibirEncerramento(): void
 }
 class ControladorAssinatura <<Controller>> {
++ajustarQuantidade(idRefeicao: String, variacao: Integer): Boolean
++validarCampoEndereco(campo: CampoEndereco, valor: String): void
 +solicitarCodigo(celular: String): void
 +validarCodigo(codigo: String): void
 +selecionarPlano(idPlano: UUID): void
